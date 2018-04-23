@@ -139,6 +139,16 @@ app.get('/login',
   function(req, res){
     res.render('login');
   });
+  
+app.get('/stats',
+  function(req, res){
+    res.render('stats');
+  });
+  
+app.get('/help',
+  function(req, res){
+    res.render('help');
+  });
 
 app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
