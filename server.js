@@ -6,9 +6,10 @@ var favicon = require('serve-favicon')
 var path = require('path')
 var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
+var surelogin = require('connect-ensure-login')
 
 var MongoClient = require('mongodb').MongoClient;
-var ObjectId = require('mongodb').ObjectId; 
+var ObjectId = require('mongodb').ObjectId;
 var url = "mongodb://localhost:27017/QuizApp";
 
 // Configure the local strategy for use by Passport.
@@ -20,25 +21,25 @@ var url = "mongodb://localhost:27017/QuizApp";
 passport.use(
 	new Strategy(
 		function(username, password, cb) {
-			
+
 			MongoClient.connect(url, function(err, db) {
 				if (err) throw err;
 				//console.log("Database connection created!");
 				var dbo = db.db("QuizApp");
-	  
+
 				dbo.collection("Users").findOne( {'username': username}, function(err, user) {
 					console.log(user);
 					if (err) { return cb(err); }
 					if (!user) { return cb(null, false); }
 					if (user.password != password) { return cb(null, false); }
 					return cb(null, user);
-			
+
 					db.close();
 				});
-  
+
 			});
 		})
-  
+
  );
 
 
@@ -54,22 +55,22 @@ passport.serializeUser(function(user, cb) {
 });
 
 passport.deserializeUser(function(id, cb) {
-	
+
 	MongoClient.connect(url, function(err, db) {
 		if (err) throw err;
 		console.log("Database connection created!");
 		var dbo = db.db("QuizApp");
-	  
-	  
+
+
 		dbo.collection("Users").findOne( {'_id': ObjectId(id) }, function(err, user) {
 			console.log(id)
 			console.log(user)
 			if (err) { return cb(err); }
 			cb(null, user);
-			
+
 			db.close();
 		});
-  
+
 	});
 
 });
@@ -111,26 +112,26 @@ MongoClient.connect(url, function(err, db) {
     //console.log("1 document inserted");
   db.close();
 //});
-  
+
 });
 
 const requestHandler = (request, response) => {
   console.log(request.url)
-  
+
 }
 
 // Define routes.
-app.get('/', 
-  require('connect-ensure-login').ensureLoggedIn(),
+app.get('/',
+  surelogin.ensureLoggedIn(),
   function(req, res) {
-	  
+
     //var filePath = path.join(__dirname, 'task.txt');
     //var stat = fileSystem.statSync(filePath);
     //res.setHeader("Content-Type", "text/plain; charset=utf-8");
     //var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
     // We replaced all the event handlers with a simple call to readStream.pipe()
     //readStream.pipe(res);
-    
+
     res.render('rooms');
   });
 
@@ -138,23 +139,31 @@ app.get('/login',
   function(req, res){
     res.render('login');
   });
-  
-app.post('/login', 
+
+app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function(req, res) {
     res.redirect('/');
   });
-  
+
 app.get('/logout',
   function(req, res){
     req.logout();
     res.redirect('/login');
   });
 
+app.get('/profile',
+	surelogin.ensureLoggedIn(),
+  function(req, res){
+
+    res.render('profile', {user: req.user});
+  }
+);
+
 
 
 app.get('/questions',
-  require('connect-ensure-login').ensureLoggedIn(),
+  surelogin.ensureLoggedIn(),
   function (req, res) {
     //res.setHeader("Content-Type", "application/json; charset=utf-8");
 
@@ -162,16 +171,16 @@ app.get('/questions',
 		if (err) throw err;
 		console.log("Database connection created!");
 		var dbo = db.db("QuizApp");
-	  
+
 		dbo.collection("Questions").find({}).toArray(function(err, result) {
 			if (err) throw err;
 			res.json(result);
 			db.close();
 		});
-  
+
 	});
 });
-    
+
 var server = app.listen(8080, function () {
 
    var host = server.address().address
@@ -179,4 +188,3 @@ var server = app.listen(8080, function () {
 
    console.log("Example app listening at http://%s:%s", host, port)
 })
-

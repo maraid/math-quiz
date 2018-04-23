@@ -3,20 +3,36 @@
   <head>
     <% include ./head %>
   </head>
-
   <body>
     <% include ./menubar %>
-    
-    <div class="container">
-
+    <div class="container" style="padding-top: 70px;">
       <div class="starter-template">
         <h1>Kvíz Játék</h1>
         <p class="lead">Játék kezédéséhez válasszon egy szobát.</p>
+        <table style="width: 80%">
+          <tr>
+            <th>ID</th>
+            <th>Szobanév</th>
+            <th>Játékosok</th>
+            <th>Státusz</th>
+          </tr>
+          <tr>
+            <td>654</td>
+            <td>Kutya</td>
+            <td>2/4</td>
+            <td>Várakozik</td>
+            <td><a href="#">Csatlakozás</a></td>
+          </tr>
+          <tr>
+            <td>564</td>
+            <td>Cica</td>
+            <td>4/4</td>
+            <td>Játékban</td>
+            <td><a  style="color: gray">Csatlakozás</a></td>
+          </tr>
+        </table>
       </div>
-
     </div><!-- /.container -->
     <% include ./footer %>
   </body>
-  
-   
 </html>

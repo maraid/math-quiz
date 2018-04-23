@@ -1,9 +1,21 @@
-<p>
-ID: <%= user.id %><br/>
-Username: <%= user.username %><br/>
-Name: <%= user.displayName %><br/>
-<% if (user.emails) { %>
-Email: <%= user.emails[0].value %><br/>
-<% } %>
-</p>
-<a href="/logout">Log out</a>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% include ./head %>
+  </head>
+  <body>
+    <% include ./menubar %>
+    <div class="container" style="padding-top: 70px;">
+      <p><strong>Felhasználónév: </strong><%= user.username %></p>
+      <p><strong>Korosztály: </strong><%= user.agegroup %></p>
+      <p><strong>Pontok: </strong></p>
+      <ul style="list-style-type: none;">
+        <li>Könnyű: <%= user.score['easy'] %></li>
+        <li>Közepes: <%= user.score['medium'] %></li>
+        <li>Nehéz: <%= user.score['hard'] %></li>
+      </ul>
+    </div>
+    <% include ./footer %>
+  </body>
+</html>
