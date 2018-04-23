@@ -123,15 +123,15 @@ const requestHandler = (request, response) => {
 app.get('/', 
   require('connect-ensure-login').ensureLoggedIn(),
   function(req, res) {
-    var filePath = path.join(__dirname, 'task.txt');
-    var stat = fileSystem.statSync(filePath);
-
-
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-
-    var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
+	  
+    //var filePath = path.join(__dirname, 'task.txt');
+    //var stat = fileSystem.statSync(filePath);
+    //res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    //var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
     // We replaced all the event handlers with a simple call to readStream.pipe()
-    readStream.pipe(res);
+    //readStream.pipe(res);
+    
+    res.render('rooms');
   });
 
 app.get('/login',

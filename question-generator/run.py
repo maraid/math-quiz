@@ -1,7 +1,7 @@
 import Generator
 import json
 
-N = 5
+N = 15
 
 
 def generate_n_different(obj, n):
