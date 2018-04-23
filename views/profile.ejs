@@ -8,7 +8,23 @@
     <% include ./menubar %>
     <div class="container" style="padding-top: 70px;">
       <p><strong>Felhasználónév: </strong><%= user.username %></p>
-      <p><strong>Korosztály: </strong><%= user.agegroup %></p>
+      <p><strong>Korosztály: </strong>
+      <%if (user.agegroup == 1) { %>
+	  0-9
+      <% } %>
+      <%if (user.agegroup == 2) { %>
+	  10-17
+      <% } %>
+      <%if (user.agegroup == 3) { %>
+	  18-30
+      <% } %>
+      <%if (user.agegroup == 4) { %>
+	  31-50
+      <% } %>
+      <%if (user.agegroup == 5) { %>
+	  50+
+      <% } %>
+      </p>
       <p><strong>Pontok: </strong></p>
       <ul style="list-style-type: none;">
         <li>Könnyű: <%= user.score['easy'] %></li>

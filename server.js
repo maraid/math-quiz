@@ -141,11 +141,13 @@ app.get('/login',
   });
   
 app.get('/stats',
+  surelogin.ensureLoggedIn(),
   function(req, res){
     res.render('stats');
   });
   
 app.get('/help',
+  surelogin.ensureLoggedIn(),
   function(req, res){
     res.render('help');
   });
@@ -157,6 +159,7 @@ app.post('/login',
   });
 
 app.get('/logout',
+  surelogin.ensureLoggedIn(),
   function(req, res){
     req.logout();
     res.redirect('/login');
