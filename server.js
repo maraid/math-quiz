@@ -12,6 +12,12 @@ var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectId;
 var url = "mongodb://localhost:27017/QuizApp";
 
+var dbo;
+
+MongoClient.connect(url, function(err, db) {
+	dbo = db.db("QuizApp");
+});
+
 // Configure the local strategy for use by Passport.
 //
 // The local strategy require a `verify` function which receives the credentials
@@ -28,7 +34,7 @@ passport.use(
 				var dbo = db.db("QuizApp");
 
 				dbo.collection("Users").findOne( {'username': username}, function(err, user) {
-					console.log(user);
+					//console.log(user);
 					if (err) { return cb(err); }
 					if (!user) { return cb(null, false); }
 					if (user.password != password) { return cb(null, false); }
@@ -58,13 +64,13 @@ passport.deserializeUser(function(id, cb) {
 
 	MongoClient.connect(url, function(err, db) {
 		if (err) throw err;
-		console.log("Database connection created!");
+		//console.log("Database connection created!");
 		var dbo = db.db("QuizApp");
 
 
 		dbo.collection("Users").findOne( {'_id': ObjectId(id) }, function(err, user) {
-			console.log(id)
-			console.log(user)
+			//console.log(id)
+			//console.log(user)
 			if (err) { return cb(err); }
 			cb(null, user);
 
@@ -76,6 +82,7 @@ passport.deserializeUser(function(id, cb) {
 });
 
 var app = express();
+
 app.use(favicon(path.join(__dirname, 'favicon.ico')))
 
 // Configure view engine to render EJS templates.
@@ -96,6 +103,46 @@ app.use(passport.session());
 
 app.set('json spaces', 2);
 
+/*
+var expressWs = require('express-ws')(app);
+
+app.ws('/', function(ws, req) {
+  ws.on('message', function(msg) {
+    console.log(msg);
+  });
+  console.log('socket', req.testing);
+  console.log('socket', req.user);
+});
+
+var aWss = expressWs.getWss('/');
+
+setInterval(function () {
+  aWss.clients.forEach(function (client) {
+	  
+	  
+	  MongoClient.connect(url, function(err, db) {
+		if (err) throw err;
+		console.log("Database connection created!");
+		var dbo = db.db("QuizApp");
+		
+		//var result = dbo.collection("Questions").aggregate(
+		//	 [ { $sample: { size: 1 } }]		)
+		
+		var result;
+		dbo.collection('Questions').aggregate(
+            {"$sample": {"size": 1}}).toArray(function (err,docs){result = docs[0]});
+		
+		console.log(result)
+		client.send(JSON.stringify(result));
+
+
+	});
+	  
+	  
+    
+  });
+}, 1000);
+ */
 
 
 fileSystem = require('fs'),
@@ -104,7 +151,7 @@ path = require('path');
 
 MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-  console.log("Database connection created!");
+  //console.log("Database connection created!");
   var dbo = db.db("QuizApp");
   //var myobj = { question: "Menyi 2x2?", answers: ["4", "néha 5", "mindig 5", "3"], difficulty: 1, tags: ["vicc", "teszt"] };
   //dbo.collection("Questions").insertOne(myobj, function(err, res) {
@@ -116,7 +163,7 @@ MongoClient.connect(url, function(err, db) {
 });
 
 const requestHandler = (request, response) => {
-  console.log(request.url)
+  //console.log(request.url)
 
 }
 
@@ -131,9 +178,60 @@ app.get('/',
     //var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
     // We replaced all the event handlers with a simple call to readStream.pipe()
     //readStream.pipe(res);
+    
+    dbo.collection("Rooms").find( {}).toArray(function (err,allrooms){
+		//console.log(allrooms)
+		  res.render('rooms', {rooms: allrooms});
+		  
+	  });
 
-    res.render('rooms');
   });
+  
+  
+  
+
+  
+  /*
+app.get('/room1',
+  surelogin.ensureLoggedIn(),
+  function(req, res){
+    res.render('game', {user: req.user, question: });
+    res.render('profile', {user: req.user});
+  });
+  */
+  
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+  
+app.get('/game',
+  surelogin.ensureLoggedIn(),
+  function(req, res){
+	  
+
+	  dbo.collection("Questions").find( {'difficulty': 3, 'tags': 'multiplication'}).toArray(function (err,questions){
+		  nr = questions.length
+		  random = getRandomInt(0,nr)
+		  resp = questions[random]
+		  //console.log(resp)
+		  res.json(resp);
+		  
+		  
+	  });
+	 
+		
+		/*var result;
+		dbo.collection('Questions').aggregate(
+            {"$sample": {"size": 1}}).toArray(function (err,docs){
+				result = docs[0]
+				console.log(result)
+		res.json(result);
+				});*/
+		
+		
+	  
+    //res.render('game');
+});
 
 app.get('/login',
   function(req, res){
@@ -155,12 +253,16 @@ app.get('/help',
 app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function(req, res) {
+	  dbo.collection("Rooms").update( {"_id": ObjectId(req.user.room)},  { "$pull": { users: req.user.username } })
+	  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": null }})
     res.redirect('/');
   });
 
 app.get('/logout',
   surelogin.ensureLoggedIn(),
   function(req, res){
+	  dbo.collection("Rooms").update( {"_id": ObjectId(req.user.room)},  { "$pull": { users: req.user.username } })
+	  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": null }})
     req.logout();
     res.redirect('/login');
   });
@@ -173,7 +275,90 @@ app.get('/profile',
   }
 );
 
+app.get('/gameid',
+	surelogin.ensureLoggedIn(),
+  function(req, res){
+  
+	   dbo.collection("Rooms").findOne( {"_id": ObjectId(req.user.room) }, function(err, room) {	
+		   
+		   if(room) {	   
+	   
+				dbo.collection("Games").findOne( {"_id": ObjectId(room.game) }, function(err, game) {
+			   
+					if(game) {
+						res.json(game._id);
+					} else {
+						res.json(null);			
+					}
+				});
+				
+		  } else {
+			  res.json(null);		
+		  }
+	   });
 
+    //res.render('profile', {user: req.user});
+  }
+);
+
+app.get('/join',
+	surelogin.ensureLoggedIn(),
+  function(req, res){
+	  var id = req.query.id
+	  
+	  dbo.collection("Rooms").findOne( {"_id": ObjectId(id) }, function(err, room) {
+		  console.log(room.users.indexOf(req.user.username))
+		  console.log(req.user.room)
+		  if(room.users.length < 4) {
+			  var users = room.users
+			  if(room.users.indexOf(req.user.username) < 0){ //nincs meg ebben a szobaban
+				  
+				  if(!req.user.room){ //nincs egy szobaban se
+				  
+					  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$push": { users: req.user.username } }) //szobahoz adas
+					  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": id }}) //szoba hozzadas
+				  
+					  if(room.users.length == 3) { //Ha idaig eljutunk akkor sikeresen belepett a jatekos a szobaba es ha elotte csak 3an voltak a szobaban mostmar tele van. Szoba frissitese, jatek inditasa
+						  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"state": "Játékban" }}) //szoba frissites, jatek inditas
+						  
+						  dbo.collection("Questions").find( {'difficulty': room.difficulty, 'tags': room.tag}).toArray(function (err,everyQuestion){
+							  var questionIDs = [];
+							  var userIDs = room.users;
+							  userIDs.push(req.user.username);
+							  var start = Date.now() ;
+							  
+							  var i;
+								for (i = 0; i < 5; i++) {
+									var rand = getRandomInt(0,everyQuestion.length-1)
+									//console.log(rand)
+									questionIDs.push(everyQuestion[rand]._id)
+								} 
+							  
+							  
+							  var game = { startTime: start, users: userIDs , questions: questionIDs };
+							  //console.log(game)
+							  dbo.collection("Games").insertOne(game, function(err, res) {
+								  //console.log(game._id)
+								  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"game": game._id }})
+								   })
+						  		  
+				  });
+					  
+				  }
+				  }
+			  }
+			  
+			  
+			  
+		  }
+		  
+	  });
+	  
+	  
+	
+    //res.render('profile', {user: req.user});
+  }
+);
 
 app.get('/questions',
   surelogin.ensureLoggedIn(),
@@ -182,7 +367,7 @@ app.get('/questions',
 
 	MongoClient.connect(url, function(err, db) {
 		if (err) throw err;
-		console.log("Database connection created!");
+		//console.log("Database connection created!");
 		var dbo = db.db("QuizApp");
 
 		dbo.collection("Questions").find({}).toArray(function(err, result) {

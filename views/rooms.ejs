@@ -11,25 +11,21 @@
         <p class="lead">Játék kezdéséhez csatlakozz egy szobához!</p>
         <table style="width: 80%">
           <tr>
-            <th>ID</th>
             <th>Szobanév</th>
             <th>Játékosok</th>
             <th>Státusz</th>
           </tr>
-          <tr>
-            <td>654</td>
-            <td>Kutya</td>
-            <td>2/4</td>
-            <td>Várakozik</td>
-            <td><a href="#">Csatlakozás</a></td>
-          </tr>
-          <tr>
-            <td>564</td>
-            <td>Cica</td>
-            <td>4/4</td>
-            <td>Játékban</td>
-            <td><a  style="color: gray">Csatlakozás</a></td>
-          </tr>
+          
+          
+          <% rooms.forEach(function(room) { %>
+			<tr>
+				<td><%= room.name %></td>
+				<td><%= room.users.length %>/4</td>
+				<td><%= room.state %></td>
+				<td><a href="/join?id=<%= room._id %>">Csatlakozás</a></td>
+			</tr>
+		  <% }); %>
+
         </table>
       </div>
     </div><!-- /.container -->
