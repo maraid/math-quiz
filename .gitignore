@@ -1,4 +1,4 @@
-/question-generator/
+/question-generator/*
 !/question-generator/*.py
 /node_modules/
 
