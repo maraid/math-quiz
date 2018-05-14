@@ -130,24 +130,24 @@ app.get('/',
     //var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
     // We replaced all the event handlers with a simple call to readStream.pipe()
     //readStream.pipe(res);
-    
+
     dbo.collection("Rooms").find( {}).toArray(function (err,allrooms){
 		//console.log(allrooms)
 		  res.render('rooms', {rooms: allrooms});
-		  
+
 	  });
 
   });
-  
-  
+
+
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-  
+
 app.get('/game',
   surelogin.ensureLoggedIn(),
   function(req, res){
-	  
+
 
 	  dbo.collection("Questions").find( {'difficulty': 3, 'tags': 'multiplication'}).toArray(function (err,questions){
 		  nr = questions.length
@@ -155,10 +155,10 @@ app.get('/game',
 		  resp = questions[random]
 		  //console.log(resp)
 		  res.json(resp);
-		  
-		  
+
+
 	  });
-	  
+
     //res.render('game');
 });
 
@@ -166,13 +166,13 @@ app.get('/login',
   function(req, res){
     res.render('login');
   });
-  
+
 app.get('/stats',
   surelogin.ensureLoggedIn(),
   function(req, res){
     res.render('stats');
   });
-  
+
 app.get('/help',
   surelogin.ensureLoggedIn(),
   function(req, res){
@@ -207,22 +207,22 @@ app.get('/profile',
 app.get('/gameid',
 	surelogin.ensureLoggedIn(),
   function(req, res){
-  
-	   dbo.collection("Rooms").findOne( {"_id": ObjectId(req.user.room) }, function(err, room) {	
-		   
-		   if(room) {	   
-	   
+
+	   dbo.collection("Rooms").findOne( {"_id": ObjectId(req.user.room) }, function(err, room) {
+
+		   if(room) {
+
 				dbo.collection("Games").findOne( {"_id": ObjectId(room.game) }, function(err, game) {
-			   
+
 					if(game) {
 						res.json(game._id);
 					} else {
-						res.json(null);			
+						res.json(null);
 					}
 				});
-				
+
 		  } else {
-			  res.json(null);		
+			  res.json(null);
 		  }
 	   });
 
@@ -234,57 +234,57 @@ app.get('/join',
 	surelogin.ensureLoggedIn(),
   function(req, res){
 	  var id = req.query.id
-	  
+
 	  dbo.collection("Rooms").findOne( {"_id": ObjectId(id) }, function(err, room) {
 		  console.log(room.users.indexOf(req.user.username))
 		  console.log(req.user.room)
 		  if(room.users.length < 4) {
 			  var users = room.users
 			  if(room.users.indexOf(req.user.username) < 0){ //nincs meg ebben a szobaban
-				  
+
 				  if(!req.user.room){ //nincs egy szobaban se
-				  
+
 					  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$push": { users: req.user.username } }) //szobahoz adas
 					  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": id }}) //szoba hozzadas
-				  
+
 					  if(room.users.length == 3) { //Ha idaig eljutunk akkor sikeresen belepett a jatekos a szobaba es ha elotte csak 3an voltak a szobaban mostmar tele van. Szoba frissitese, jatek inditasa
 						  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"state": "Játékban" }}) //szoba frissites, jatek inditas
-						  
+
 						  dbo.collection("Questions").find( {'difficulty': room.difficulty, 'tags': room.tag}).toArray(function (err,everyQuestion){
 							  var questionIDs = [];
 							  var userIDs = room.users;
 							  userIDs.push(req.user.username);
 							  var start = Date.now() ;
-							  
+
 							  var i;
 								for (i = 0; i < 5; i++) {
 									var rand = getRandomInt(0,everyQuestion.length-1)
 									//console.log(rand)
 									questionIDs.push(everyQuestion[rand]._id)
-								} 
-							  
-							  
+								}
+
+
 							  var game = { startTime: start, users: userIDs , questions: questionIDs };
 							  //console.log(game)
 							  dbo.collection("Games").insertOne(game, function(err, res) {
 								  //console.log(game._id)
 								  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"game": game._id }})
 								   })
-						  		  
+
 				  });
-					  
+
 				  }
 				  }
 			  }
-			  
-			  
-			  
+
+
+
 		  }
-		  
+
 	  });
-	  
-	  
-	
+
+
+
     //res.render('profile', {user: req.user});
   }
 );
