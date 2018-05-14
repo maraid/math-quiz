@@ -64,13 +64,10 @@ passport.deserializeUser(function(id, cb) {
 
 	MongoClient.connect(url, function(err, db) {
 		if (err) throw err;
-		//console.log("Database connection created!");
 		var dbo = db.db("QuizApp");
 
 
 		dbo.collection("Users").findOne( {'_id': ObjectId(id) }, function(err, user) {
-			//console.log(id)
-			//console.log(user)
 			if (err) { return cb(err); }
 			cb(null, user);
 
@@ -103,46 +100,6 @@ app.use(passport.session());
 
 app.set('json spaces', 2);
 
-/*
-var expressWs = require('express-ws')(app);
-
-app.ws('/', function(ws, req) {
-  ws.on('message', function(msg) {
-    console.log(msg);
-  });
-  console.log('socket', req.testing);
-  console.log('socket', req.user);
-});
-
-var aWss = expressWs.getWss('/');
-
-setInterval(function () {
-  aWss.clients.forEach(function (client) {
-	  
-	  
-	  MongoClient.connect(url, function(err, db) {
-		if (err) throw err;
-		console.log("Database connection created!");
-		var dbo = db.db("QuizApp");
-		
-		//var result = dbo.collection("Questions").aggregate(
-		//	 [ { $sample: { size: 1 } }]		)
-		
-		var result;
-		dbo.collection('Questions').aggregate(
-            {"$sample": {"size": 1}}).toArray(function (err,docs){result = docs[0]});
-		
-		console.log(result)
-		client.send(JSON.stringify(result));
-
-
-	});
-	  
-	  
-    
-  });
-}, 1000);
- */
 
 
 fileSystem = require('fs'),
@@ -151,12 +108,7 @@ path = require('path');
 
 MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-  //console.log("Database connection created!");
   var dbo = db.db("QuizApp");
-  //var myobj = { question: "Menyi 2x2?", answers: ["4", "néha 5", "mindig 5", "3"], difficulty: 1, tags: ["vicc", "teszt"] };
-  //dbo.collection("Questions").insertOne(myobj, function(err, res) {
-    //if (err) throw err;
-    //console.log("1 document inserted");
   db.close();
 //});
 
@@ -188,18 +140,6 @@ app.get('/',
   });
   
   
-  
-
-  
-  /*
-app.get('/room1',
-  surelogin.ensureLoggedIn(),
-  function(req, res){
-    res.render('game', {user: req.user, question: });
-    res.render('profile', {user: req.user});
-  });
-  */
-  
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -218,17 +158,6 @@ app.get('/game',
 		  
 		  
 	  });
-	 
-		
-		/*var result;
-		dbo.collection('Questions').aggregate(
-            {"$sample": {"size": 1}}).toArray(function (err,docs){
-				result = docs[0]
-				console.log(result)
-		res.json(result);
-				});*/
-		
-		
 	  
     //res.render('game');
 });
