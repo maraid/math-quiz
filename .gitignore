@@ -1,4 +1,4 @@
-/question-generator/.idea/
-/question-generator/__pycache__/
-/question-generator/venv/
-/question-generator/*.txt
+/question-generator/
+!/question-generator/*.py
+/node-modules/
+
