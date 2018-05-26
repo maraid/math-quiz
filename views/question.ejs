@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% include ./head %>
+    <style>
+        .padded-container * {
+            padding: 5px;
+        }    
+    </style>
+  </head>
+  <body>
+    <% include ./menubar %>
+    <div class="container padded-container" id="content" style="padding-top: 70px;">
+        <div class="row">
+            <div class="col-md-2 mx-auto"><strong><%= question.question %></strong></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6"><button id="btn0" name="ans" class="btn btn-info" style="width: 80%"><%= question.answers[ordering[0]] %></button></div>
+            <div class="col-md-6"><button id="btn1" name="ans" class="btn btn-info" style="width: 80%"><%= question.answers[ordering[1]] %></button></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6"><button id="btn2" name="ans" class="btn btn-info" style="width: 80%"><%= question.answers[ordering[2]] %></button></div>
+            <div class="col-md-6"><button id="btn3" name="ans" class="btn btn-info" style="width: 80%"><%= question.answers[ordering[3]] %></button></div>
+        </div>
+        <div class="row">
+            <div class="col-md-1 mx-auto"><strong><p id="timer"></p></strong></div>
+        </div>
+    </div>
+    <% include ./footer %>
+  </body> 
+  <script>
+    $( document ).ready(function() {
+      var answered = false;
+
+      window.setTimeout(function(){
+        if (answered) return window.location.reload();
+        window.location.href = "/game/answer?n=-1";
+      }, 8000);
+      
+      var load_time = Date.now() + 8000;
+      window.setInterval(function(){
+        var delta = (load_time - Date.now())/1000;
+        $("#timer").text(parseInt(delta));
+      }, 100)
+      
+      function disableBtns(){
+        $("[name=ans]").prop("disabled", true)
+      }
+
+      $("#btn0").on('click', function(){
+        answered = true;
+        $.ajax({
+          url: "/game/answer?n=<%= ordering[0] %>",
+          success: function(data){console.log(data);disableBtns()}})
+        });
+      $("#btn1").on('click', function(){
+      answered = true;
+      $.ajax({
+          url: "/game/answer?n=<%= ordering[1] %>",
+          success: function(data){console.log(data);disableBtns()}})
+      });
+      $("#btn2").on('click', function(){
+      answered = true;
+      $.ajax({
+          url: "/game/answer?n=<%= ordering[2] %>",
+          success: function(data){console.log(data);disableBtns()}})
+      });
+      $("#btn3").on('click', function(){
+      answered = true;
+      $.ajax({
+          url: "/game/answer?n=<%= ordering[3] %>",
+          success: function(data){console.log(data);disableBtns()}})
+      });
+    });
+  </script>
+</html>

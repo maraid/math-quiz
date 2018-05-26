@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% include ./head %>
+  </head>
+  <body>
+    <% include ./menubar %>
+    <div class="container" id="content" style="padding-top: 70px;">
+    </div>
+    <div class="container" style="padding-top: 50px"><a href="/leave?roomid=<%= roomid %>" class="btn btn-warning">Szoba elhagyása</a></div>
+    <% include ./footer %>
+  </body> 
+  <script>
+    $( document ).ready(function() {
+      var room;
+      window.setInterval(function(){
+        $.ajax({
+          url: "/room/update",
+          success: function(data){
+            if (data.redirect){
+              window.location.href = data.redirect;
+            } else if (room != data){
+              $("#content").html(data);
+              room = data;
+            }
+          }
+        });
+      }, 1000);
+    });
+  </script>
+</html>

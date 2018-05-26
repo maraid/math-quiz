@@ -1,6 +1,5 @@
 #!/usr/bin/env nodejs
 
-
 var express = require('express');
 var favicon = require('serve-favicon')
 var path = require('path')
@@ -105,6 +104,25 @@ app.set('json spaces', 2);
 fileSystem = require('fs'),
 path = require('path');
 
+var questionsPerGame = 5;
+
+// return a random permutation of a range (similar to randperm in Matlab)
+function randperm(maxValue){
+    // first generate number sequence
+    var permArray = new Array(maxValue);
+    for(var i = 0; i < maxValue; i++){
+        permArray[i] = i;
+    }
+    // draw out of the number sequence
+    for (var i = (maxValue - 1); i >= 0; --i){
+        var randPos = Math.floor(i * Math.random());
+        var tmpStore = permArray[i];
+        permArray[i] = permArray[randPos];
+        permArray[randPos] = tmpStore;
+    }
+    return permArray;
+}
+
 
 MongoClient.connect(url, function(err, db) {
   if (err) throw err;
@@ -123,76 +141,123 @@ const requestHandler = (request, response) => {
 app.get('/',
   surelogin.ensureLoggedIn(),
   function(req, res) {
-
-    //var filePath = path.join(__dirname, 'task.txt');
-    //var stat = fileSystem.statSync(filePath);
-    //res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    //var readStream = fileSystem.createReadStream(filePath, encoding='utf-8');
-    // We replaced all the event handlers with a simple call to readStream.pipe()
-    //readStream.pipe(res);
-
+    
     dbo.collection("Rooms").find( {}).toArray(function (err,allrooms){
 		//console.log(allrooms)
 		  res.render('rooms', {rooms: allrooms});
-
+		  
 	  });
 
   });
-
-
+  
+  
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
-app.get('/game',
-  surelogin.ensureLoggedIn(),
-  function(req, res){
-
-
-	  dbo.collection("Questions").find( {'difficulty': 3, 'tags': 'multiplication'}).toArray(function (err,questions){
-		  nr = questions.length
-		  random = getRandomInt(0,nr)
-		  resp = questions[random]
-		  //console.log(resp)
-		  res.json(resp);
-
-
-	  });
-
-    //res.render('game');
-});
 
 app.get('/login',
   function(req, res){
     res.render('login');
   });
-
-app.get('/stats',
-  surelogin.ensureLoggedIn(),
+  
+app.get('/register',
   function(req, res){
-    res.render('stats');
+    res.render('register');
   });
-
+  
+app.get('/stats', surelogin.ensureLoggedIn(), function(req, res){
+	dbo.collection("Users").find({}).toArray(function(err, alluser){
+		var users = []
+		alluser.forEach(user => {
+			score = user.score.easy * 1.0 + 
+					user.score.medium * 1.4 +
+					user.score.hard * 2.0;
+			users.push({username: user.username, score: parseInt(score)})
+		});
+		users.sort(function(a, b){
+			return b.score-a.score
+		})
+		res.render('stats', {users: users});
+	})
+})
+  
 app.get('/help',
   surelogin.ensureLoggedIn(),
   function(req, res){
     res.render('help');
   });
+  
+app.post('/register',
+  
+  function(req, res) {
+	  
+	  var age = req.body.age
+	  
+	  var group
+	  
+	  if(0 <= age && age <= 9) {
+		  group = 1;
+	  }
+	  
+	  if(10 <= age && age <= 17) {
+		  group = 2;
+	  }
+	  
+	  if(18 <= age && age <= 30) {
+		  group = 3;
+	  }
+	  
+	  if(31 <= age && age <= 50) {
+		  group = 4;
+	  }
+	  
+	  if(51 <= age) {
+		  group = 5;
+	  }
+	  
+	  var scores = {easy: 0, medium: 0, hard: 0}
+	  
+	  dbo.collection("Users").insertOne({
+						username: req.body.username,
+						password: req.body.password,
+						agegroup: group,
+						answers: [],
+						score: scores,
+						}
+						
+					);
+    res.redirect('/');
+  });
 
 app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function(req, res) {
-	  dbo.collection("Rooms").update( {"_id": ObjectId(req.user.room)},  { "$pull": { users: req.user.username } })
-	  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": null }})
+	  dbo.collection("Rooms").update( { state: { $in: ["Várakozik"]}},  { "$pull": { users: req.user.username }})
+	  dbo.collection("Rooms").update( { state: { $in: ["Várakozik"]}},  { "$pull": { users: req.user.username }})
     res.redirect('/');
   });
 
 app.get('/logout',
   surelogin.ensureLoggedIn(),
   function(req, res){
-	  dbo.collection("Rooms").update( {"_id": ObjectId(req.user.room)},  { "$pull": { users: req.user.username } })
-	  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": null }})
+	  dbo.collection("Rooms").update( { state: { $in: ["Várakozik"]}},  { "$pull": { users: req.user.username }})
+
     req.logout();
+    res.redirect('/login');
+  });
+  
+app.get('/deleteprofile',
+  surelogin.ensureLoggedIn(),
+  function(req, res){
+	  
+	userToDelete = req.user.username
+
+    req.logout();
+    
+    
+    dbo.collection("Users").deleteOne( { username: userToDelete  })
+    
+    
     res.redirect('/login');
   });
 
@@ -207,87 +272,173 @@ app.get('/profile',
 app.get('/gameid',
 	surelogin.ensureLoggedIn(),
   function(req, res){
-
-	   dbo.collection("Rooms").findOne( {"_id": ObjectId(req.user.room) }, function(err, room) {
-
-		   if(room) {
-
+	   dbo.collection("Rooms").findOne( {"_id": ObjectId(req.user.room) }, function(err, room) {	
+		   if(room) {	   
 				dbo.collection("Games").findOne( {"_id": ObjectId(room.game) }, function(err, game) {
-
 					if(game) {
 						res.json(game._id);
 					} else {
-						res.json(null);
+						res.json(null);			
 					}
 				});
-
 		  } else {
-			  res.json(null);
+			  res.json(null);		
 		  }
 	   });
-
     //res.render('profile', {user: req.user});
   }
 );
 
-app.get('/join',
-	surelogin.ensureLoggedIn(),
-  function(req, res){
-	  var id = req.query.id
+app.get('/create_new', surelogin.ensureLoggedIn(), function(req, res){
+		dbo.collection("Rooms").findOne( {$and: [{state: {$in: ["Várakozik", "Játékban"]}}, {$or: [{users: req.user.username}, {name: req.query.roomname}]}]}, function(err, room){
+			if (!room){
+				dbo.collection("Questions").aggregate({ $sample : { size : questionsPerGame }}, { $match : { difficulty : parseInt(req.query.difficulty) }}).toArray(function (err, random5){
+					dbo.collection("Rooms").insertOne({
+						difficulty: req.query.difficulty,
+						name: req.query.roomname,
+						playercount: parseInt(req.query.playercount),
+						state: "Várakozik",
+						users: [],
+						questions: random5,
+						answers: Array(questionsPerGame).fill({}),
+						current: 0 }
+						, function(err, result) {
+							if (err) throw err;
+							joinRoom(req.user.username, result.insertedId);
+							res.redirect('/room');
+						}
+					);
+				});	
+			} else res.redirect('/room');
+		});
+		
+	}
+);
 
-	  dbo.collection("Rooms").findOne( {"_id": ObjectId(id) }, function(err, room) {
-		  console.log(room.users.indexOf(req.user.username))
-		  console.log(req.user.room)
-		  if(room.users.length < 4) {
-			  var users = room.users
-			  if(room.users.indexOf(req.user.username) < 0){ //nincs meg ebben a szobaban
+function joinRoom(username, roomId){
+	dbo.collection("Rooms").updateMany( {state : 'Várakozik'}, { $pull: { users: username } }) //Minden várakozó szobából kivesz
+	dbo.collection("Rooms").update( {_id: ObjectId(roomId)}, { $push: { users: username } }) //Hozzáadás a szobához
+}
 
-				  if(!req.user.room){ //nincs egy szobaban se
+app.get('/join', surelogin.ensureLoggedIn(), function(req, res){
+	  var id = req.query.id;
+	  dbo.collection("Rooms").findOne( {_id: ObjectId(id) }, function(err, room) {
+		  if(room.users.length < room.playercount) {
+				joinRoom(req.user.username, id)
+			}
+		});
 
-					  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$push": { users: req.user.username } }) //szobahoz adas
-					  dbo.collection("Users").update( {"_id": ObjectId(req.user._id)},  { "$set": {"room": id }}) //szoba hozzadas
+		dbo.collection("Rooms").findOne( {_id: ObjectId(id) }, function(err, room) {
+			console.log(room.users.length)
+			console.log(room.playercount)
 
-					  if(room.users.length == 3) { //Ha idaig eljutunk akkor sikeresen belepett a jatekos a szobaba es ha elotte csak 3an voltak a szobaban mostmar tele van. Szoba frissitese, jatek inditasa
-						  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"state": "Játékban" }}) //szoba frissites, jatek inditas
+			if(room.users.length == room.playercount-1) {
+				dbo.collection("Rooms").update( {_id: ObjectId(id)},  { $set: { state: "Játékban" }}) //szoba frissites, jatek inditas
+			};
+		});
+		res.redirect('/room');
+  }
+);
 
-						  dbo.collection("Questions").find( {'difficulty': room.difficulty, 'tags': room.tag}).toArray(function (err,everyQuestion){
-							  var questionIDs = [];
-							  var userIDs = room.users;
-							  userIDs.push(req.user.username);
-							  var start = Date.now() ;
+app.get('/leave', surelogin.ensureLoggedIn(), function(req, res){
+	dbo.collection("Rooms").update( { _id: ObjectId(req.query.roomid)},  { "$pull": { users: req.user.username }}, function(err, result){
+		res.redirect('/');
+	});
+});
 
-							  var i;
-								for (i = 0; i < 5; i++) {
-									var rand = getRandomInt(0,everyQuestion.length-1)
-									//console.log(rand)
-									questionIDs.push(everyQuestion[rand]._id)
+app.get('/room', surelogin.ensureLoggedIn(), function(req, res){
+
+	dbo.collection("Rooms").findOne( { $and: [{state: {$in: ["Várakozik", "Játékban"]}}, {users: req.user.username}]}, function(err, room) {
+		
+
+		if (!room) return res.redirect('/'); // If the player is not in any active game, go to homepage
+		if (room.state == "Játékban") return res.redirect('/game'); // If the player is in a running game, go to that game
+		console.log(room._id)
+		res.render('waiting_room', {roomid: room._id});
+	});
+});
+
+app.get('/room/update', surelogin.ensureLoggedIn(), function(req, res){
+	dbo.collection("Rooms").findOne( { $and: [{state: {$in: ["Várakozik", "Játékban"]}}, {users: req.user.username}]}, function(err, room) {
+		if (room.state == "Várakozik") return res.render('name_table', {room_obj: room});
+
+		res.send({redirect: '/game'});
+	});
+})
+
+app.get('/game', surelogin.ensureLoggedIn(), function(req, res){
+	  dbo.collection("Rooms").findOne( {state: "Játékban"},  {users: req.user.username}, function (err,room){
+			if (!room) {
+				dbo.collection("Rooms").findOne( {state: "Befejezve"},  {users: req.user.username}, function (err,closeroom){
+						
+						if(closeroom) {
+							console.log("closing room:")
+							console.log(closeroom)
+							console.log(closeroom.answers[0].btamas)
+							
+							var i;
+							for (i = 0; i < closeroom.questions.length; i++) {
+								var j;
+								for (j = 0; j < closeroom.users.length; j++) {
+									console.log(closeroom.users[j])
+									var user = closeroom.users[j]
+								
+									if(closeroom.answers[i][user] == 0) {
+										console.log('good answer')
+										if(closeroom.questions[i].difficulty == 1) {
+											console.log('easy')
+											dbo.collection("Users").update( {username: user}, {$inc: {'score.easy': 1}});
+										}
+										
+										if(closeroom.questions[i].difficulty == 2) {
+											console.log('medium')
+											dbo.collection("Users").update( {username: user}, {$inc: {'score.medium': 1}});
+										}
+										
+										if(closeroom.questions[i].difficulty == 3) {
+											console.log('hard')
+											dbo.collection("Users").update( {username: user}, {$inc: {'score.hard': 1}});
+										}
+										
+									}
 								}
+							}
+							
+							dbo.collection("Rooms").deleteOne( {_id: ObjectId(closeroom._id)})
+						}
+						
+				}); 
+				dbo.collection("Rooms").find( {}).toArray(function (err,allrooms){
+					res.render('rooms', {rooms: allrooms});
+				  
+				});
+			} else {
+				order = randperm(4)
+				res.render('question', {question: room.questions[room.current], ordering: order})
+			}
+	  }); 
+	  
+	  
+});
 
-
-							  var game = { startTime: start, users: userIDs , questions: questionIDs };
-							  //console.log(game)
-							  dbo.collection("Games").insertOne(game, function(err, res) {
-								  //console.log(game._id)
-								  dbo.collection("Rooms").update( {"_id": ObjectId(id)},  { "$set": {"game": game._id }})
-								   })
-
-				  });
-
-				  }
-				  }
-			  }
-
-
-
-		  }
-
-	  });
-
-
-
-    //res.render('profile', {user: req.user});
-  }
-);
+app.get('/game/answer', surelogin.ensureLoggedIn(), function(req, res){
+	dbo.collection("Rooms").findOne( {state: "Játékban"},  {users: req.user.username}, function(err, result){
+		if(result){
+			dbo.collection("Rooms").update( {_id: ObjectId(result._id)}, {$set: {["answers."+String(result.current)+"."+req.user.username]: req.query.n}});
+			dbo.collection("Rooms").findOne( {state: "Játékban"},  {users: req.user.username}, function(err, room){
+				if ( (Object.keys(room.answers[room.current]).length == room.playercount ) && room.current < questionsPerGame){
+					dbo.collection("Rooms").update( {_id: ObjectId(result._id)}, {$inc: {current: 1}});
+					
+					if ( room.current >= questionsPerGame-1 ){
+						dbo.collection("Rooms").update( {_id: ObjectId(result._id)},  { $set: { state: "Befejezve" }})
+						console.log("jatek befejezve")
+					}
+				}
+			});
+		}
+	});
+	res.redirect('/game')
+})
 
 app.get('/questions',
   surelogin.ensureLoggedIn(),
@@ -314,4 +465,4 @@ var server = app.listen(8080, function () {
    var port = server.address().port
 
    console.log("Example app listening at http://%s:%s", host, port)
-})
+});

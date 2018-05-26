@@ -1,4 +1,4 @@
-Követelmények:
+﻿Követelmények:
 SSADM terv készítése és az alkalmazás megvalósítása.
 Példa: honfoglalo.hu
 
@@ -102,4 +102,10 @@ screen:
 5: globális statisztika
 6: help: hogy kell használni, feladatunk leírása
 
+Csatlakozás megnyomása után töltőscreen. Közben polling a server felé (1 msp timeout kb)
+Ha mindenki becsatlakozott akkor a szerver válaszol. A javascript frissíti az oldalt és a kérdések ejs-ből generálódnak. 
+
+Amikor valaki rányom egy válaszra a node beírja az adatbázisba. Ha letelik a 10 másodperc akkor a javascript a frontend felől küld egy -1 -et válaszként. Minden válasz beérkezte után megnézi a node, hogy megválaszolta-e mindenki a kérdést és ha igen akkor kiküldi mindenkinek a következő kérdést.
+
+A válasz gomb megnyomásakor a frontend elkezdi nyomni 1 msp-s timeoutttal a szerver felé a választ, addig amíg nem kap vissza ok-t. Az ok-ra befrissül és az ejs-ből töltődig az új kérdés.
 

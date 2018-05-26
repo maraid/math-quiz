@@ -1,0 +1,13 @@
+<p>Csatlakozott játékosok száma: <span id="currentnum"><%= room_obj.users.length %></span></p>
+<p>Összes játékos: <span id="maxnum"><%= room_obj.playercount %></span></p>
+<br>
+<table id="playertable">
+<tr>
+    <th>Csatlakozott játékosok</th>
+</tr>
+<% room_obj.users.forEach(function(user, i) { %>
+<tr>
+    <td><%= i+1 %>. <%= user %></td>
+</tr>
+<% }); %>
+</table>

@@ -2,30 +2,63 @@
 <html lang="en">
   <head>
     <% include ./head %>
+    <style>
+      .addnew {
+        background-color: beige;
+        padding: 5px;
+        border-style: solid;
+        border-color: darkgoldenrod;
+        border-width: 2px;
+        margin-bottom: 20px;
+        width: 80%;
+      }
+      .form-inline > * {
+        margin:5px 5px;
+      }
+    </style>
   </head>
   <body>
     <% include ./menubar %>
     <div class="container" style="padding-top: 70px;">
       <div class="starter-template">
         <h1>Kvíz Játék</h1>
-        <p class="lead">Játék kezdéséhez csatlakozz egy szobához!</p>
-        <table style="width: 80%">
+        <p class="lead">A kezdéshez csatlakozz egy szobához vagy hozz létre újat!</p>
+        <div class="addnew">
+          <p><strong>Új szoba létrehozása:</strong></p>
+          <form class="form-inline" action="/create_new" method="GET">
+            <div class="form-group">
+              <label for="roomname">Szoba neve: </label>
+              <input class="form-control" required="true" type="text" id="roomname" name="roomname" placeholder="Írj be egy szobanevet">
+            </div>
+            <div class="form-group">
+              <label for="playercount">Játékosszám: </label>
+              <input class="form-control"  required="true" type="number" max="4" min="2" id="playercount" name="playercount" placeholder="" value="4">
+            </div>
+            <div class="form-group">
+              <label for="difficulty">Nehézségi szint: </label>
+              <input class="form-control"  required="true" type="number" max="3" min="1" id="difficulty" name="difficulty" placeholder="" value="2">
+            </div>
+            <button class="btn btn-success">Létrehozás</button>
+          </form>
+        </div>
+        <table  style="width: 100%">
           <tr>
             <th>Szobanév</th>
+            <th>Nehézség</th>
             <th>Játékosok</th>
             <th>Státusz</th>
           </tr>
-          
-          
           <% rooms.forEach(function(room) { %>
-			<tr>
-				<td><%= room.name %></td>
-				<td><%= room.users.length %>/4</td>
-				<td><%= room.state %></td>
-				<td><a href="/join?id=<%= room._id %>">Csatlakozás</a></td>
-			</tr>
-		  <% }); %>
-
+          <tr>
+            <td><%= room.name %></td>
+            <td><%= room.difficulty %></td>
+            <td><%= room.users.length %>/<%= room.playercount %></td>
+            <td><%= room.state %></td>
+            <%if (room.state == "Várakozik") { %>
+              <td><a href="/join?id=<%= room._id %>">Csatlakozás</a></td>
+            <% } %>
+          </tr>
+          <% }); %>
         </table>
       </div>
     </div><!-- /.container -->

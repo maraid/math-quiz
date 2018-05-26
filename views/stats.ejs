@@ -10,6 +10,22 @@
         <h1>Statisztika</h1>
         Globális statisztika minden játékost összevetve.
       </div>
+      <div>
+          <table id="playertable" style="width: 100%">
+              <tr>
+                  <th>Helyezés</th>
+                  <th>Játékosnév</th>
+                  <th>Pont</th>
+              </tr>
+              <% users.forEach(function(user, i) { %>
+              <tr>
+                  <td>#<%= i+1 %></td>
+                  <td><%= user.username %></td>
+                  <td><%= user.score %></td>
+              </tr>
+              <% }); %>
+              </table>
+      </div>
     </div><!-- /.container -->
     <% include ./footer %>
   </body>
